@@ -1,13 +1,27 @@
+import { db } from '../db';
+import { tasksTable } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { type UpdateTaskStatusInput, type Task } from '../schema';
 
-export async function updateTaskStatus(input: UpdateTaskStatusInput): Promise<Task> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating the status of a specific task in the database.
-    // It should find the task by ID and update its status to the provided value.
-    return Promise.resolve({
-        id: input.id,
-        title: 'Placeholder Task', // This should come from database
-        status: input.status,
-        created_at: new Date() // This should come from database
-    } as Task);
-}
+export const updateTaskStatus = async (input: UpdateTaskStatusInput): Promise<Task> => {
+  try {
+    // Update the task status and return the updated record
+    const result = await db.update(tasksTable)
+      .set({
+        status: input.status
+      })
+      .where(eq(tasksTable.id, input.id))
+      .returning()
+      .execute();
+
+    // Check if task was found and updated
+    if (result.length === 0) {
+      throw new Error(`Task with ID ${input.id} not found`);
+    }
+
+    return result[0];
+  } catch (error) {
+    console.error('Task status update failed:', error);
+    throw error;
+  }
+};
